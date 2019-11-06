@@ -21,6 +21,15 @@ namespace Yield
 
                 Console.WriteLine(number);
             }
+            // Note: Here GetEvenNumbersDeferred() is called again because it does not return the RESULTS of the query, it only returns the query itself!
+            // On the other hand GetEvenNumbers() is only called one time.
+            foreach (var number in evenNums)
+            {
+                if (number > 10)
+                    break;
+
+                Console.WriteLine(number);
+            }
             sw.Stop();
             Console.WriteLine("Build List Method: " + sw.ElapsedMilliseconds + " ms");
             Console.ReadKey();
