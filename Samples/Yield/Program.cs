@@ -12,7 +12,8 @@ namespace Yield
             var sw = new Stopwatch();
             sw.Start();
 
-            var evenNums = GetEvenNumbersDeferred();
+            //var evenNums = GetEvenNumbers(); // Execute in more than 3500 ms
+            var evenNums = GetEvenNumbersDeferred(); // Execute in 5 ms
             foreach (var number in evenNums)
             {
                 if (number > 10)
