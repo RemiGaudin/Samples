@@ -40,7 +40,7 @@ namespace DeferredExecution
             return _markets.Values.Select(x => x.Copy());
         }
 
-        public class Market
+        private class Market
         {
             public string Name { get; set; }
 
