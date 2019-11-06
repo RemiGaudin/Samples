@@ -4,11 +4,12 @@ using System.Diagnostics;
 
 namespace Yield
 {
+    // Code sample from https://filteredcode.wordpress.com/2015/01/07/tolist-ing-everything-and-who-is-yield-part-2-of-2/
     static class Program
     {
         static void Main(string[] args)
         {
-            Stopwatch sw = new Stopwatch();
+            var sw = new Stopwatch();
             sw.Start();
 
             var evenNums = GetEvenNumbersDeferred();
