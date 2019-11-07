@@ -18,14 +18,15 @@ namespace DeferredExecution
             try
             {
                 var markets = GetMarkets();
-                foreach (var mar in markets)
+                foreach (var market in markets)
                 {
                     // This will raise the exception "System.InvalidOperationException: Collection was modified..." at the second iteration!
                     // This is due to the fact that IEnumerable<T> is deferring the execution of LINQ queries (except for functions
                     // such as .ToList() or .ToArray() that will force the execution of the query).
                     // To prevent the exception, GetMarkets() should do a .ToList() before returning the IEnumerable<Market>.
                     // See also: https://stackoverflow.com/q/1168944/4924754
-                    _markets.Remove(mar.Name);
+                    var marketCopy = new Market { Name = market.Name + "_copy" };
+                    _markets.Add(marketCopy.Name, marketCopy);
                 }
             }
             catch (Exception ex)
