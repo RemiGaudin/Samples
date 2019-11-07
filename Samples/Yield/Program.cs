@@ -37,6 +37,7 @@ namespace Yield
 
         public static IEnumerable<int> GetEvenNumbers()
         {
+            // Put a breakpoint here to check that GetEvenNumbers() is called only one time just before the first foreach
             var evens = new List<int>();
             for (int i = 0; i <= 500000000; i++)
             {
@@ -49,8 +50,11 @@ namespace Yield
         }
         public static IEnumerable<int> GetEvenNumbersDeferred()
         {
+            // Put a breakpoint here to check that GetEvenNumbersDeferred() is called at both foreach
             for (int i = 0; i <= 500000000; i++)
             {
+                // Put a breakpoint here to check that the GetEvenNumbersDeferred() loop is stoping its iteration at the yield
+                // then continue the iteration only when required (i.e. at every next iteration of the Main/foreach loops)
                 if (i % 2 == 0)
                 {
                     yield return i;
