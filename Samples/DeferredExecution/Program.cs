@@ -36,12 +36,13 @@ namespace DeferredExecution
             {
                 Console.WriteLine(ex.Message);
             }
-            Console.WriteLine("Number of markets in the dictionary: " + _markets.Count);
+            Console.WriteLine("Final number of markets in the dictionary: " + _markets.Count);
             Console.ReadKey();
         }
         private static IEnumerable<Market> GetMarkets()
         {
-            // If you add .ToList() at the end of the return below, you won't have the exception anymore.
+            // If you add .ToList() at the end of the return in the line below, you won't have the exception anymore
+            // and the final number of markets will be 8 instead of 6.
             return _markets.Values.Where(x => x.Name.StartsWith("C")).Select(x => x.Copy());
         }
 
