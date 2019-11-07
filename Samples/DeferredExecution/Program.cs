@@ -19,6 +19,7 @@ namespace DeferredExecution
         {
             try
             {
+                Console.WriteLine("Starting number of markets in the dictionary: " + _markets.Count);
                 var markets = GetMarkets();
                 foreach (var market in markets)
                 {
@@ -34,7 +35,7 @@ namespace DeferredExecution
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.ToString());
             }
             Console.WriteLine("Final number of markets in the dictionary: " + _markets.Count);
             Console.ReadKey();
