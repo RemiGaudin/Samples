@@ -15,10 +15,51 @@ namespace XmlSerializerPerformance
             // Code from https://www.damirscorner.com/blog/posts/20110612-XmlSerializerConstructorPerformanceIssues.html
             // See also https://kalapos.net/Blog/ShowPost/how-the-evil-system-xml-serialization-xmlserializer-class-can-bring-a-server-with-32gb-ram-down
             // And https://docs.microsoft.com/en-us/dotnet/api/system.xml.serialization.xmlserializer?redirectedfrom=MSDN&view=netframework-4.8#dynamically-generated-assemblies
-            Test1();
-            Test2();
+            TestXmlSerializer();
+            TestXmlHelper();
         }
-        static void Test1()
+        static void TestXmlSerializer()
+        {
+            var writer = new StringWriter();
+            var xmlWriter = new XmlTextWriter(writer);
+            xmlWriter.WriteStartDocument();
+            xmlWriter.WriteStartElement("Root");
+            var stopwatch = new Stopwatch();
+            int iterations = 10000;
+
+            stopwatch.Restart();
+            // This will take around 35 ms
+            for (int i = 0; i < iterations; i++)
+            {
+                var serializer = new XmlSerializer(typeof(string));
+                serializer.Serialize(xmlWriter, "Test");
+            }
+            stopwatch.Stop();
+            Console.WriteLine("{0} serializations with XmlSerializer(string): {1,5} ms", iterations, stopwatch.ElapsedMilliseconds);
+
+            stopwatch.Restart();
+            // This will take around 28000 ms and consume more than 400 MB of RAM!!!
+            for (int i = 0; i < iterations; i++)
+            {
+                var serializer = new XmlSerializer(typeof(string), new XmlRootAttribute("Type"));
+                serializer.Serialize(xmlWriter, "Test");
+            }
+            stopwatch.Stop();
+            Console.WriteLine("{0} serializations with XmlSerializer(string, XmlRootAttribute): {1,5} ms", iterations, stopwatch.ElapsedMilliseconds);
+
+            var staticSerializer = new XmlSerializer(typeof(string), new XmlRootAttribute("Type"));
+            stopwatch.Restart();
+            // This will take around 8 ms
+            for (int i = 0; i < iterations; i++)
+            {
+                staticSerializer.Serialize(xmlWriter, "Test");
+            }
+            stopwatch.Stop();
+            Console.WriteLine("{0} serializations with static XmlSerializer(string, XmlRootAttribute): {1,5} ms", iterations, stopwatch.ElapsedMilliseconds);
+
+            Console.ReadKey();
+        }
+        static void TestXmlHelper()
         {
             var writer = new StringWriter();
             var xmlWriter = new XmlTextWriter(writer);
@@ -60,47 +101,6 @@ namespace XmlSerializerPerformance
             }
             stopwatch.Stop();
             Console.WriteLine("{0} serializations with XmlHelper2.GetSerializer<string>(): {1,5} ms", iterations, stopwatch.ElapsedMilliseconds);
-        }
-        static void Test2()
-        {
-            var writer = new StringWriter();
-            var xmlWriter = new XmlTextWriter(writer);
-            xmlWriter.WriteStartDocument();
-            xmlWriter.WriteStartElement("Root");
-            var stopwatch = new Stopwatch();
-            int iterations = 10000;
-
-            stopwatch.Restart();
-            // This will take around 35 ms
-            for (int i = 0; i < iterations; i++)
-            {
-                var serializer = new XmlSerializer(typeof(string));
-                serializer.Serialize(xmlWriter, "Test");
-            }
-            stopwatch.Stop();
-            Console.WriteLine("{0} serializations with XmlSerializer(string): {1,5} ms", iterations, stopwatch.ElapsedMilliseconds);
-
-            stopwatch.Restart();
-            // This will take around 28000 ms and consume more than 400 MB of RAM!!!
-            for (int i = 0; i < iterations; i++)
-            {
-                var serializer = new XmlSerializer(typeof(string), new XmlRootAttribute("Type"));
-                serializer.Serialize(xmlWriter, "Test");
-            }
-            stopwatch.Stop();
-            Console.WriteLine("{0} serializations with XmlSerializer(string, XmlRootAttribute): {1,5} ms", iterations, stopwatch.ElapsedMilliseconds);
-
-            var staticSerializer = new XmlSerializer(typeof(string), new XmlRootAttribute("Type"));
-            stopwatch.Restart();
-            // This will take around 8 ms
-            for (int i = 0; i < iterations; i++)
-            {
-                staticSerializer.Serialize(xmlWriter, "Test");
-            }
-            stopwatch.Stop();
-            Console.WriteLine("{0} serializations with static XmlSerializer(string, XmlRootAttribute): {1,5} ms", iterations, stopwatch.ElapsedMilliseconds);
-
-            Console.ReadKey();
         }
 
         public static class XmlHelper1
