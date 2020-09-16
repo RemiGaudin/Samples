@@ -1,0 +1,115 @@
+--- Kubernetes CLI  ----------------------------------------------------------------------
+
+kubectl create serviceaccount k8sadmin -n kube-system
+kubectl create clusterrolebinding k8sadmin --clusterrole=cluster-admin --serviceaccount=kube-system:k8sadmin
+kubectl get secret -n kube-system
+kubectl describe secret k8sadmin-token-... -n kube-system
+
+*** Metric server (déjà déployé dans AKS, mais pas déployé dans Docker Desktop)
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.3.6/components.yaml
+$env:KUBE_EDITOR='code -w'
+kubectl edit deploy -n kube-system metrics-server (add to the args: --kubelet-insecure-tls + --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname)
+
+*** K8s Dashboard
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0/aio/deploy/recommended.yaml
+$env:KUBE_EDITOR='code -w'
+kubectl edit service kubernetes-dashboard -n kubernetes-dashboard (change type: NodePort)
+kubectl get service kubernetes-dashboard -n kubernetes-dashboard
+kubectl edit deployment kubernetes-dashboard -n kubernetes-dashboard (add to the args section: --token-ttl=0)
+*** Et pour rajouter skip login button: args section: --enable-skip-login + add ClusterRoleBinding cluster-admin on ServiceAccount kubernetes-dashboard (voir plus bas, ou kubernetes-dashboard-crb.yaml dans dossier Ugo\Helm\Samples)
+
+kubectl create namespace core
+kubectl create namespace ugo
+
+*** az aks browse --name aks-remi --resource-group dev.core
+
+*** Penser à upgrader kubectl-cli de temps en temps:
+*** - Pour voir quelle version on a: kubectl version --client
+*** - Pour updater: https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl-on-windows (pour savoir où est l'environment Path: Get-Command kubectl)
+***   => Ou alors passer par l'installer de Docker Desktop ??? 
+
+--- Helm  ----------------------------------------------------------------------
+
+cd C:\ATEO\azure\gitlab\Core\Helm
+helm dependency update .\Core\
+-- modifier values.yaml -> commenter la section loki si c'est une installation locale ou changer addresses/username/password Cassandra si nécéssaire
+helm install core .\Core\ -n core
+
+cd C:\ATEO\azure\gitlab\Ugo\Helm
+-- allumer les VM DB/Messaging si nécéssaire
+-- modifier shared.yaml -> IP des servers + Nom DB/Virtual Host -> voir en dessous
+helm install ugo .\Ugo\ -n ugo -f .\UGO\shared.yaml
+
+*** Dry Run/Debug: helm install core .\Core\ -n core --dry-run --debug | Out-File output.txt
+
+*** Penser à upgrader helm de temps en temps:
+*** - Pour voir quelle version on a: helm version
+*** - Pour updater: choco upgrade kubernetes-helm
+
+--- Azure CLI ----------------------------------------------------------------------
+
+az login
+az aks create --name aks-remi --resource-group dev.core --location francecentral --kubernetes-version 1.18.2 --node-vm-size Standard_D2s_v3 --node-count 1 --max-pods 100 --vm-set-type VirtualMachineScaleSets --service-cidr 10.0.12.0/24 --dns-service-ip 10.0.12.12 --docker-bridge-address 10.0.13.1/24 --network-plugin kubenet --vnet-subnet-id /subscriptions/40fe3d83-3a13-438b-870b-fead616cc9da/resourceGroups/dev/providers/Microsoft.Network/virtualNetworks/dev-vnet/subnets/DevCoreSubnet_AKS
+az aks get-credentials --name aks-remi --resource-group dev.core --overwrite-existing
+
+'** Scaling du cluster: az aks scale --name aks-remi --resource-group dev.core --node-count 3
+*** Suppression du cluster: az aks delete --name aks-remi --resource-group dev.core
+*** Pour avoir la liste des regions pour le paramêtre --location: az account list-locations
+*** Pour avoir la liste des subnet id pour le paramêtre --vnet-subnet-id: az network vnet subnet list --vnet-name dev-vnet --resource-group dev
+
+*** Penser à upgrader azure-cli de temps en temps:
+*** - Pour voir si il y a de nouvelles versions: az version
+*** - Pour updater: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-windows?view=azure-cli-latest&tabs=azure-cli#install-or-update
+
+--- Remarques  ----------------------------------------------------------------------
+
+Installation de Kubernetes sur PC local:
+- Il vaut mieux l'installer via Docker Desktop que via minikube car Docker Desktop à l'air plus à jour (ils sont déjà sur WSL2 alors que minikube est encore Hyper-V ou VirtualBox)
+- Pour que les pods puissent se connecter à la DB/Messaging de la machine locale
+  - exécuter la commande ipconfig
+  - récupérer l'IPv4 Address associé à: Ethernet adapter vEthernet (WSL) (note: avant WSL2 c'était Docker NAT)
+    - "server":"172.20.16.1\\SQL_EXPRESS_2014"
+    - "host":"172.20.16.1"
+  - Ou alors utiliser le DNS name host.docker.internal car l'address IP de l'host change à chaque re-démarrage ! (c.f. https://docs.docker.com/docker-for-windows/networking/)
+    - "server":"host.docker.internal\\SQL_EXPRESS_2014"
+    - "host":"host.docker.internal"
+	
+K8s contextes:
+- kubectl config get-contexts
+- kubectl config use-context my-cluster-name
+- kubectl config delete-context my-cluster-name
+- Note: les contextes + cluster info sont stockés dans C:\Users\remig/.kube/config
+
+--- kubernetes-dashboard-crb.yaml ----------------------------------------------------------------------
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubernetes-dashboard-cluster-admin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: kubernetes-dashboard
+    namespace: kubernetes-dashboard
+
+--- shared.yaml ----------------------------------------------------------------------
+
+database:
+  type: Sqlserver
+  host: "host.docker.internal\\SQL_EXPRESS_2014"
+  port: 1433
+  name: UgoLocal
+  username: ateo
+  password: xxxxxx
+messaging:
+  type: Rabbitmq
+  host: host.docker.internal
+  port: 5672
+  virtualHost: ugo-local
+  username: ateo
+  password: xxxxxx
+  
+  
